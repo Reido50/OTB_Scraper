@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 from urllib.request import urlopen
 from bs4 import BeautifulSoup as soup
+import discord_notify as dn
 import csv
 import shutil
 import smtplib
@@ -8,26 +9,12 @@ import os
 import threading
 
 def update():
-    # Timer for every 10 seconds
-    #threading.Timer(10.0, update).start()
-
-    num_discs = 24   # Number of products scraped
-    my_url = 'https://otbdiscs.com/'
-    sender_email = "reidsender@gmail.com"
-    rec_email = "reidoharry50@gmail.com"
-    password = "8zM7sBGi9jvK"
-    message = """\
-    Subject: New Discs!
-
-    Here's the current list:"""
+    num_discs = 20   # Number of products scraped
+    my_url = 'https://otbdiscs.com/'    # URL of site to scrap
+    notifier = dn.Notifier("https://discordapp.com/api/webhooks/782356542179508254/_VVJxmscOPkztfubKdO3198msha8cjfAEsvntyR76ed7ps3kSucdZlIt20v-TAKy3UsQ")
 
     # Find directory
     BASE_DIR = os.getcwd()
-
-    # Link with gmail
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.starttls()
-    server.login(sender_email, password)
 
     # Grab the html from website
     uClient = urlopen(my_url)
@@ -55,7 +42,6 @@ def update():
         old_discs.append(row[0])
 
     count = 0
-    didItChange = False;
     for old_disc in old_discs:
         # Grab the name
         name_div = discs[count].findAll("div",{"class":"wc-block-grid__product-title"})
@@ -66,16 +52,12 @@ def update():
         if(old_disc != disc_name):
             didItChange = True
             if not(disc_name in old_discs):
+                notifier.send("NEW ITEM! " + disc_name, print_message=False)
                 print("NEW DISC!")
                 print(disc_name)
-                message += "\n\t" + disc_name
 
         # Increment the row count
         count+=1
-
-    if(didItChange):
-        server.sendmail(sender_email, rec_email, message.encode("utf-8"))
-        print("Sent")
 
     shutil.move(BASE_DIR + "/new_disc_list.csv", BASE_DIR + "/old_disc_list.csv")
 
